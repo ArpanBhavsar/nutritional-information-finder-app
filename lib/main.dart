@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:myapp/screens/splash_screen.dart';
 
-import 'theme.dart';
+import 'utils/theme.dart';
 
 void main() {
   runApp(const MyApp());
@@ -16,7 +17,7 @@ class MyApp extends StatelessWidget {
       title: 'Flutter Demo',
        theme: AppTheme.lightTheme, // Use the light theme
           darkTheme: AppTheme.darkTheme, // Use the dark theme,
-      home: const MyHomePage(title: 'Flutter Demo Home Page'),
+      home: const SplashScreen(),
     );
   }
 }
