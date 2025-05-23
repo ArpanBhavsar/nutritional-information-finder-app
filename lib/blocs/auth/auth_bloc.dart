@@ -1,5 +1,6 @@
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
+import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 part 'auth_event.dart';
@@ -17,6 +18,9 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         );
         emit(Authenticated(res.session, res.user));
       } catch (e) {
+        if (kDebugMode) {
+          print(e.toString());
+        }
         emit(AuthError(e.toString()));
       }
     });

@@ -44,24 +44,30 @@ class _LoginScreenState extends State<LoginScreen> {
       body: SafeArea(
         child: BlocConsumer<AuthBloc, AuthState>(
           listener: (context, state) {
-            if(state is Authenticated) {
-            Navigator.pushAndRemoveUntil(
-              context,
-              MaterialPageRoute(builder: (context) => HomeScreen()),
-              (Route<dynamic> route) => false,
-            );
-          } 
+            if (state is Authenticated) {
+              Navigator.pushAndRemoveUntil(
+                context,
+                MaterialPageRoute(builder: (context) => HomeScreen()),
+                (Route<dynamic> route) => false,
+              );
+            }
+            if (state is AuthError) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(state.message),
+                  duration: const Duration(seconds: 3),
+                ),
+              );
+            }
           },
           builder: (context, state) {
             if (state is AuthLoading) {
-                return const Center(child: CircularProgressIndicator());
-              } else if (state is AuthError) {
-                return Center(child: Text('Error: ${state.message}'));
-              } else {
-                return SafeArea(
-                  child: Center(child: _loginForm(context)),
-                );
-              }
+              return const Center(child: CircularProgressIndicator());
+            } else if (state is AuthError) {
+              return Center(child: Text('Error: ${state.message}'));
+            } else {
+              return SafeArea(child: Center(child: _loginForm(context)));
+            }
           },
         ),
       ),

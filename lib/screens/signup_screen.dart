@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../blocs/auth/auth_bloc.dart';
@@ -123,25 +124,34 @@ class _SignUpScreenState extends State<SignUpScreen> {
     return Scaffold(
       body: BlocConsumer<AuthBloc, AuthState>(
         listener: (context, state) {
-// Suggested code may be subject to a license. Learn more: ~LicenseLog:4181069863.
-          if(state is Authenticated) {
+          if (kDebugMode) {
+            print(state.toString());
+          }
+          // Suggested code may be subject to a license. Learn more: ~LicenseLog:4181069863.
+          if (state is Authenticated) {
             Navigator.pushAndRemoveUntil(
               context,
               MaterialPageRoute(builder: (context) => const LoginScreen()),
               (Route<dynamic> route) => false,
             );
-          } 
+          }
+          if (state is AuthError) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(state.message),
+                duration: const Duration(seconds: 3),
+              ),
+            );
+          }
         },
         builder: (context, state) {
           if (state is AuthLoading) {
-                return const Center(child: CircularProgressIndicator());
-              } else if (state is AuthError) {
-                return Center(child: Text('Error: ${state.message}'));
-              } else {
-                return SafeArea(
-                  child: Center(child: _signUpForm(state, context)),
-                );
-              }
+            return const Center(child: CircularProgressIndicator());
+          } else if (state is AuthError) {
+            return Center(child: Text('Error: ${state.message}'));
+          } else {
+            return SafeArea(child: Center(child: _signUpForm(state, context)));
+          }
         },
       ),
     );
