@@ -20,5 +20,18 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         emit(AuthError(e.toString()));
       }
     });
+
+    on<LoginEvent>((event, emit) async {
+      emit(AuthLoading());
+      try {
+        final AuthResponse res = await supabase.auth.signInWithPassword(
+          email: event.email,
+          password: event.password,
+        );
+        emit(Authenticated(res.session, res.user));
+      } catch (e) {
+        emit(AuthError(e.toString()));
+      }
+    });
   }
 }

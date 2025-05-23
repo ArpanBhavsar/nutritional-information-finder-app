@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:myapp/screens/home_screen.dart';
+import '../blocs/auth/auth_bloc.dart';
 import 'signup_screen.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -14,7 +17,12 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _isPasswordVisible = false;
 
   void _login() {
-    // Implement your login logic here
+    context.read<AuthBloc>().add(
+      LoginEvent(
+        email: _emailController.text.trim(),
+        password: _passwordController.text.trim(),
+      ),
+    );
   }
 
   void _togglePasswordVisibility() {
@@ -34,85 +42,110 @@ class _LoginScreenState extends State<LoginScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 20.0),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Text(
-                  'Login',
-                  style: TextStyle(fontSize: 32.0, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 40.0),
-                TextFormField(
-                  controller: _emailController,
-                  decoration: const InputDecoration(
-                    hintText: 'Email',
-                    border: OutlineInputBorder(),
-                  ),
-                  keyboardType: TextInputType.emailAddress,
-                ),
-                const SizedBox(height: 20.0),
-                TextFormField(
-                  controller: _passwordController,
-                  obscureText: !_isPasswordVisible,
-                  decoration: InputDecoration(
-                    hintText: 'Password',
-                    border: const OutlineInputBorder(),
+        child: BlocConsumer<AuthBloc, AuthState>(
+          listener: (context, state) {
+            if(state is Authenticated) {
+            Navigator.pushAndRemoveUntil(
+              context,
+              MaterialPageRoute(builder: (context) => HomeScreen()),
+              (Route<dynamic> route) => false,
+            );
+          } 
+          },
+          builder: (context, state) {
+            if (state is AuthLoading) {
+                return const Center(child: CircularProgressIndicator());
+              } else if (state is AuthError) {
+                return Center(child: Text('Error: ${state.message}'));
+              } else {
+                return SafeArea(
+                  child: Center(child: _loginForm(context)),
+                );
+              }
+          },
+        ),
+      ),
+    );
+  }
 
-                    suffixIcon: IconButton(
-                      icon: Icon(
-                        _isPasswordVisible
-                            ? Icons.visibility
-                            : Icons.visibility_off,
-                      ),
-                      onPressed: _togglePasswordVisibility,
-                    ),
+  Center _loginForm(BuildContext context) {
+    return Center(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(horizontal: 20.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Text(
+              'Login',
+              style: TextStyle(fontSize: 32.0, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 40.0),
+            TextFormField(
+              controller: _emailController,
+              decoration: const InputDecoration(
+                hintText: 'Email',
+                border: OutlineInputBorder(),
+              ),
+              keyboardType: TextInputType.emailAddress,
+            ),
+            const SizedBox(height: 20.0),
+            TextFormField(
+              controller: _passwordController,
+              obscureText: !_isPasswordVisible,
+              decoration: InputDecoration(
+                hintText: 'Password',
+                border: const OutlineInputBorder(),
+
+                suffixIcon: IconButton(
+                  icon: Icon(
+                    _isPasswordVisible
+                        ? Icons.visibility
+                        : Icons.visibility_off,
                   ),
+                  onPressed: _togglePasswordVisibility,
                 ),
-                const SizedBox(height: 20.0),
-                ElevatedButton(onPressed: _login, child: const Text('Login')),
-                const SizedBox(height: 20.0),
-                GestureDetector(
-                  onTap: () {
-                    // Implement forgot password logic
+              ),
+            ),
+            const SizedBox(height: 20.0),
+            ElevatedButton(onPressed: _login, child: const Text('Login')),
+            const SizedBox(height: 20.0),
+            GestureDetector(
+              onTap: () {
+                // Implement forgot password logic
+              },
+              child: Text(
+                'Forgot Password?',
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.secondary,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+            const SizedBox(height: 10.0),
+            Wrap(
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: [
+                const Text("Don't have an account? "),
+                TextButton(
+                  onPressed: () {
+                    Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const SignUpScreen(),
+                      ),
+                    );
                   },
                   child: Text(
-                    'Forgot Password?',
+                    'Sign Up',
                     style: TextStyle(
                       color: Theme.of(context).colorScheme.secondary,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
                 ),
-                const SizedBox(height: 10.0),
-                Wrap(
-                  crossAxisAlignment: WrapCrossAlignment.center,
-                  children: [
-                    const Text("Don't have an account? "),
-                    TextButton(
-                      onPressed: () {
-                        Navigator.pushReplacement(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const SignUpScreen(),
-                          ),
-                        );
-                      },
-                      child: Text(
-                        'Sign Up',
-                        style: TextStyle(
-                          color: Theme.of(context).colorScheme.secondary,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
               ],
             ),
-          ),
+          ],
         ),
       ),
     );
