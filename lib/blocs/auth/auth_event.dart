@@ -31,6 +31,10 @@ final class LoginEvent extends AuthEvent {
   List<Object> get props => [email, password];
 }
 
+final class CheckLoginEvent extends AuthEvent {
+  const CheckLoginEvent();
+}
+
 final class LogOutEvent extends AuthEvent {
   const LogOutEvent();
 }
