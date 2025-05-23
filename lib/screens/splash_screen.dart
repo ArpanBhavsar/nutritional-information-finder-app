@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:myapp/screens/home_screen.dart';
+
 import '../blocs/auth/auth_bloc.dart';
 import 'login_screen.dart';
 
@@ -24,22 +26,14 @@ class _SplashScreenState extends State<SplashScreen> {
     return Scaffold(
       body: BlocListener<AuthBloc, AuthState>(
         listener: (context, state) {
-          if(state is Authenticated){
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(builder: (context) => LoginScreen()),
-            );
+          if (state is Authenticated) {
+            Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => HomeScreen()));
           }
-          if(state is AuthInitial){
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(builder: (context) => LoginScreen()),
-            );
+          if (state is AuthInitial) {
+            Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => LoginScreen()));
           }
         },
-        child: Center(
-          child: Image.asset('assets/images/logo.png', width: 250, height: 250),
-        ),
+        child: Center(child: Image.asset('assets/images/logo.png', width: 250, height: 250)),
       ),
     );
   }
