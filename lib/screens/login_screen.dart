@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:myapp/screens/home_screen.dart';
+
 import '../blocs/auth/auth_bloc.dart';
-import 'signup_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -17,12 +16,7 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _isPasswordVisible = false;
 
   void _login() {
-    context.read<AuthBloc>().add(
-      LoginEvent(
-        email: _emailController.text.trim(),
-        password: _passwordController.text.trim(),
-      ),
-    );
+    context.read<AuthBloc>().add(LoginEvent(email: _emailController.text.trim(), password: _passwordController.text.trim()));
   }
 
   void _togglePasswordVisibility() {
@@ -45,19 +39,10 @@ class _LoginScreenState extends State<LoginScreen> {
         child: BlocConsumer<AuthBloc, AuthState>(
           listener: (context, state) {
             if (state is Authenticated) {
-              Navigator.pushAndRemoveUntil(
-                context,
-                MaterialPageRoute(builder: (context) => HomeScreen()),
-                (Route<dynamic> route) => false,
-              );
+              Navigator.pushNamedAndRemoveUntil(context, '/home', (Route<dynamic> route) => false);
             }
             if (state is AuthError) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(state.message),
-                  duration: const Duration(seconds: 3),
-                ),
-              );
+              ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(state.message), duration: const Duration(seconds: 3)));
             }
           },
           builder: (context, state) {
@@ -81,19 +66,9 @@ class _LoginScreenState extends State<LoginScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Text(
-              'Login',
-              style: TextStyle(fontSize: 32.0, fontWeight: FontWeight.bold),
-            ),
+            const Text('Login', style: TextStyle(fontSize: 32.0, fontWeight: FontWeight.bold)),
             const SizedBox(height: 40.0),
-            TextFormField(
-              controller: _emailController,
-              decoration: const InputDecoration(
-                hintText: 'Email',
-                border: OutlineInputBorder(),
-              ),
-              keyboardType: TextInputType.emailAddress,
-            ),
+            TextFormField(controller: _emailController, decoration: const InputDecoration(hintText: 'Email', border: OutlineInputBorder()), keyboardType: TextInputType.emailAddress),
             const SizedBox(height: 20.0),
             TextFormField(
               controller: _passwordController,
@@ -102,14 +77,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 hintText: 'Password',
                 border: const OutlineInputBorder(),
 
-                suffixIcon: IconButton(
-                  icon: Icon(
-                    _isPasswordVisible
-                        ? Icons.visibility
-                        : Icons.visibility_off,
-                  ),
-                  onPressed: _togglePasswordVisibility,
-                ),
+                suffixIcon: IconButton(icon: Icon(_isPasswordVisible ? Icons.visibility : Icons.visibility_off), onPressed: _togglePasswordVisibility),
               ),
             ),
             const SizedBox(height: 20.0),
@@ -119,13 +87,7 @@ class _LoginScreenState extends State<LoginScreen> {
               onTap: () {
                 // Implement forgot password logic
               },
-              child: Text(
-                'Forgot Password?',
-                style: TextStyle(
-                  color: Theme.of(context).colorScheme.secondary,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
+              child: Text('Forgot Password?', style: TextStyle(color: Theme.of(context).colorScheme.secondary, fontWeight: FontWeight.bold)),
             ),
             const SizedBox(height: 10.0),
             Wrap(
@@ -134,20 +96,9 @@ class _LoginScreenState extends State<LoginScreen> {
                 const Text("Don't have an account? "),
                 TextButton(
                   onPressed: () {
-                    Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const SignUpScreen(),
-                      ),
-                    );
+                    Navigator.pushReplacementNamed(context, '/signup');
                   },
-                  child: Text(
-                    'Sign Up',
-                    style: TextStyle(
-                      color: Theme.of(context).colorScheme.secondary,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
+                  child: Text('Sign Up', style: TextStyle(color: Theme.of(context).colorScheme.secondary, fontWeight: FontWeight.bold)),
                 ),
               ],
             ),

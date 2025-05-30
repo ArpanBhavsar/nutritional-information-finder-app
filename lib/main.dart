@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:myapp/screens/splash_screen.dart';
+import 'package:myapp/utils/routes.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'blocs/auth/auth_bloc.dart';
@@ -12,12 +13,7 @@ Future<void> main() async {
     anonKey:
         'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRzaGJqb3pyZW9wdmFteGZldmp6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDY4MDkyMzYsImV4cCI6MjA2MjM4NTIzNn0.boZ1BJ3zlVBEVCBWMGJnMy6J3H7Tgm0GluN3UM9fUWM',
   );
-  runApp(
-    MultiBlocProvider(
-      providers: [BlocProvider(create: (context) => AuthBloc())],
-      child: MyApp(),
-    ),
-  );
+  runApp(MultiBlocProvider(providers: [BlocProvider(create: (context) => AuthBloc())], child: MyApp()));
 }
 
 class MyApp extends StatelessWidget {
@@ -27,7 +23,11 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Flutter Demo',
+      title: 'Medicine Tracker',
+      // Use initialRoute to specify the first screen to show
+      initialRoute: splashScreenRoute,
+      // Use onGenerateRoute to handle named routes
+      onGenerateRoute: generateRoute,
       theme: AppTheme.lightTheme, // Use the light theme
       darkTheme: AppTheme.darkTheme, // Use the dark theme,
       home: const SplashScreen(),
@@ -102,13 +102,7 @@ class _MyHomePageState extends State<MyHomePage> {
           // action in the IDE, or press "p" in the console), to see the
           // wireframe for each widget.
           mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            const Text('You have pushed the button this many times:'),
-            Text(
-              '$_counter',
-              style: Theme.of(context).textTheme.headlineMedium,
-            ),
-          ],
+          children: <Widget>[const Text('You have pushed the button this many times:'), Text('$_counter', style: Theme.of(context).textTheme.headlineMedium)],
         ),
       ),
       floatingActionButton: FloatingActionButton(

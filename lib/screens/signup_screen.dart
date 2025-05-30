@@ -1,8 +1,8 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+
 import '../blocs/auth/auth_bloc.dart';
-import 'login_screen.dart';
 
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({Key? key}) : super(key: key);
@@ -32,20 +32,11 @@ class _SignUpScreenState extends State<SignUpScreen> {
   }
 
   void _onSignUp() {
-    context.read<AuthBloc>().add(
-      SignUpEvent(
-        email: _emailController.text.trim(),
-        password: _passwordController.text.trim(),
-      ),
-    );
+    context.read<AuthBloc>().add(SignUpEvent(email: _emailController.text.trim(), password: _passwordController.text.trim()));
   }
 
   void _navigateToLogin() {
-    Navigator.pushAndRemoveUntil(
-      context,
-      MaterialPageRoute(builder: (context) => const LoginScreen()),
-      (Route<dynamic> route) => false,
-    );
+    Navigator.pushNamedAndRemoveUntil(context, '/login', (Route<dynamic> route) => false);
   }
 
   void _updatePasswordStrength(String password) {
@@ -61,8 +52,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
       if (RegExp(r'[A-Z]').hasMatch(password)) _passwordStrength += 0.125;
       if (RegExp(r'[a-z]').hasMatch(password)) _passwordStrength += 0.125;
       if (RegExp(r'[0-9]').hasMatch(password)) _passwordStrength += 0.125;
-      if (RegExp(r'[!@#$%^&*(),.?":{}|<>]').hasMatch(password))
-        _passwordStrength += 0.125;
+      if (RegExp(r'[!@#$%^&*(),.?":{}|<>]').hasMatch(password)) _passwordStrength += 0.125;
 
       // Ensure strength is capped at 1.0
       _passwordStrength = _passwordStrength.clamp(0.0, 1.0);
@@ -127,21 +117,11 @@ class _SignUpScreenState extends State<SignUpScreen> {
           if (kDebugMode) {
             print(state.toString());
           }
-          // Suggested code may be subject to a license. Learn more: ~LicenseLog:4181069863.
           if (state is Authenticated) {
-            Navigator.pushAndRemoveUntil(
-              context,
-              MaterialPageRoute(builder: (context) => const LoginScreen()),
-              (Route<dynamic> route) => false,
-            );
+            Navigator.pushNamedAndRemoveUntil(context, '/login', (Route<dynamic> route) => false);
           }
           if (state is AuthError) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(state.message),
-                duration: const Duration(seconds: 3),
-              ),
-            );
+            ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(state.message), duration: const Duration(seconds: 3)));
           }
         },
         builder: (context, state) {
@@ -162,10 +142,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
       padding: const EdgeInsets.all(16.0),
       child: Column(
         children: [
-          const Text(
-            'Sign Up',
-            style: TextStyle(fontSize: 32.0, fontWeight: FontWeight.bold),
-          ),
+          const Text('Sign Up', style: TextStyle(fontSize: 32.0, fontWeight: FontWeight.bold)),
           const SizedBox(height: 40.0),
           Form(
             key: _formKey,
@@ -176,10 +153,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 TextFormField(
                   controller: _emailController,
                   keyboardType: TextInputType.emailAddress,
-                  decoration: const InputDecoration(
-                    labelText: 'Email',
-                    border: OutlineInputBorder(),
-                  ),
+                  decoration: const InputDecoration(labelText: 'Email', border: OutlineInputBorder()),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
                       return 'Please enter your email';
@@ -201,28 +175,15 @@ class _SignUpScreenState extends State<SignUpScreen> {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         IconButton(
-                          icon: Icon(
-                            _showPasswordRequirements
-                                ? Icons.info
-                                : Icons.info_outline,
-                            color:
-                                _showPasswordRequirements
-                                    ? Theme.of(context).primaryColor
-                                    : null,
-                          ),
+                          icon: Icon(_showPasswordRequirements ? Icons.info : Icons.info_outline, color: _showPasswordRequirements ? Theme.of(context).primaryColor : null),
                           onPressed: () {
                             setState(() {
-                              _showPasswordRequirements =
-                                  !_showPasswordRequirements;
+                              _showPasswordRequirements = !_showPasswordRequirements;
                             });
                           },
                         ),
                         IconButton(
-                          icon: Icon(
-                            _isPasswordVisible
-                                ? Icons.visibility
-                                : Icons.visibility_off,
-                          ),
+                          icon: Icon(_isPasswordVisible ? Icons.visibility : Icons.visibility_off),
                           onPressed: () {
                             setState(() {
                               _isPasswordVisible = !_isPasswordVisible;
@@ -236,38 +197,18 @@ class _SignUpScreenState extends State<SignUpScreen> {
                   validator: _validatePassword,
                 ),
                 const SizedBox(height: 8.0),
-                LinearProgressIndicator(
-                  value: _passwordStrength,
-                  backgroundColor: Colors.grey[300],
-                  color: _getPasswordStrengthColor(),
-                  minHeight: 5.0,
-                ),
+                LinearProgressIndicator(value: _passwordStrength, backgroundColor: Colors.grey[300], color: _getPasswordStrengthColor(), minHeight: 5.0),
                 const SizedBox(height: 4.0),
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: Text(
-                    _getPasswordStrengthLabel(),
-                    style: TextStyle(
-                      color: _getPasswordStrengthColor(),
-                      fontSize: 12.0,
-                    ),
-                  ),
-                ),
+                Align(alignment: Alignment.centerRight, child: Text(_getPasswordStrengthLabel(), style: TextStyle(color: _getPasswordStrengthColor(), fontSize: 12.0))),
                 if (_showPasswordRequirements)
                   Container(
                     padding: const EdgeInsets.all(8.0),
                     margin: const EdgeInsets.only(top: 8.0),
-                    decoration: BoxDecoration(
-                      color: Colors.grey[200],
-                      borderRadius: BorderRadius.circular(4.0),
-                    ),
+                    decoration: BoxDecoration(color: Colors.grey[200], borderRadius: BorderRadius.circular(4.0)),
                     child: const Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          'Password must contain:',
-                          style: TextStyle(fontWeight: FontWeight.bold),
-                        ),
+                        Text('Password must contain:', style: TextStyle(fontWeight: FontWeight.bold)),
                         SizedBox(height: 4.0),
                         Text('- Minimum 8 characters'),
                         Text('- At least one uppercase letter'),
@@ -285,15 +226,10 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     labelText: 'Confirm Password',
                     border: const OutlineInputBorder(),
                     suffixIcon: IconButton(
-                      icon: Icon(
-                        _isConfirmPasswordVisible
-                            ? Icons.visibility
-                            : Icons.visibility_off,
-                      ),
+                      icon: Icon(_isConfirmPasswordVisible ? Icons.visibility : Icons.visibility_off),
                       onPressed: () {
                         setState(() {
-                          _isConfirmPasswordVisible =
-                              !_isConfirmPasswordVisible;
+                          _isConfirmPasswordVisible = !_isConfirmPasswordVisible;
                         });
                       },
                     ),
@@ -321,30 +257,16 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     padding: const EdgeInsets.symmetric(vertical: 16.0),
                     backgroundColor: Theme.of(context).primaryColor,
                     foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8.0),
-                    ),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.0)),
                   ),
-                  child: const Text(
-                    'Sign Up',
-                    style: TextStyle(fontSize: 18.0),
-                  ),
+                  child: const Text('Sign Up', style: TextStyle(fontSize: 18.0)),
                 ),
                 const SizedBox(height: 16.0),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: <Widget>[
                     const Text("Already have account?"),
-                    TextButton(
-                      onPressed: _navigateToLogin,
-                      child: Text(
-                        'Login',
-                        style: TextStyle(
-                          color: Theme.of(context).colorScheme.secondary,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
+                    TextButton(onPressed: _navigateToLogin, child: Text('Login', style: TextStyle(color: Theme.of(context).colorScheme.secondary, fontWeight: FontWeight.bold))),
                   ],
                 ),
               ],
