@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:myapp/screens/medicine_scanner_screen.dart';
 
 import '../models/medicine.dart';
 import '../widgets/nav_destination.dart';
@@ -84,7 +85,7 @@ class _HomeScaffoldState extends State<HomeScaffold> {
 
   static final List<Widget> _destinationViews = [
     Center(child: InventoryListView(medicines: medicines)),
-    const Center(child: Text('Scan Content')),
+    const Center(child: MedicineScannerScreen()),
     const Center(child: Text('Prescription Content')),
     const Center(child: Text('Reminders Content')),
   ];
