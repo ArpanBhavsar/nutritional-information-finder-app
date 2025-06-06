@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 
 import '../models/medicine.dart';
@@ -55,8 +57,20 @@ class InventoryListView extends StatelessWidget {
         itemCount: inventory.length,
         itemBuilder: (context, index) {
           final medicine = inventory[index];
+          
+          Widget leadingWidget;
+          if (medicine.imagePath.isNotEmpty && File(medicine.imagePath).existsSync()) {
+            leadingWidget = CircleAvatar(
+              backgroundImage: FileImage(File(medicine.imagePath)),
+            );
+          } else {
+            leadingWidget = const CircleAvatar(
+              child: Icon(Icons.medical_services),
+            );
+          }
+
           return ListTile(
-            leading: CircleAvatar(child: Text(medicine.name.isNotEmpty ? medicine.name[0].toUpperCase() : '')),
+            leading: leadingWidget,
             title: Text(medicine.name),
             subtitle: Text('${medicine.strength}, Quantity: ${medicine.quantity}'),
             trailing: Chip(
