@@ -1,11 +1,14 @@
-import 'dart:convert'; // For base64Encode
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:ollama_dart/ollama_dart.dart';
-import 'package:flutter_markdown/flutter_markdown.dart';
-import 'package:http/io_client.dart'; // For IOClient to support HttpClient with proxy
+
+import '../blocs/medicine_scanner/medicine_scanner_bloc.dart';
+import '../blocs/medicine_scanner/medicine_scanner_event.dart';
+import '../blocs/medicine_scanner/medicine_scanner_state.dart';
 
 class MedicineScannerScreen extends StatefulWidget {
   const MedicineScannerScreen({Key? key}) : super(key: key);
@@ -15,239 +18,177 @@ class MedicineScannerScreen extends StatefulWidget {
 }
 
 class _MedicineScannerScreenState extends State<MedicineScannerScreen> {
-  File? _image;
   final picker = ImagePicker();
-  String? _responseText;
-  bool _isLoading = false;
+  late final OllamaClient _ollamaClient;
+  late final MedicineScannerBloc _medicineScannerBloc;
+  final ScrollController _scrollController = ScrollController();
+  bool _isScrolled = false;
 
-  // --- Configuration for Ollama and Proxy ---
-  // TODO: IMPORTANT! Replace with your actual Ollama API base URL.
-  // Default Ollama runs on http://localhost:11434
-  static const String _ollamaApiBaseUrl = 'http://10.0.2.16:11434';
+  @override
+  void initState() {
+    super.initState();
+    _ollamaClient = OllamaClient(baseUrl: 'http://10.0.2.2:11434/api');
+    _medicineScannerBloc = MedicineScannerBloc(ollama: _ollamaClient);
 
-  // TODO: IMPORTANT! Configure your HTTP proxy if needed.
-  // If you don't use a proxy, leave _proxyHost empty or _proxyPort as 0.
-  static const String _proxyHost = ''; // e.g., '127.0.0.1' or 'myproxy.example.com'
-  static const int _proxyPort = 0;    // e.g., 8888 (use 0 if no proxy or _proxyHost is empty)
-  // --- End of Configuration ---
+    _scrollController.addListener(_onScroll);
+  }
 
+  void _onScroll() {
+    if (_scrollController.offset > 0 && !_isScrolled) {
+      setState(() {
+        _isScrolled = true;
+      });
+    } else if (_scrollController.offset <= 0 && _isScrolled) {
+      setState(() {
+        _isScrolled = false;
+      });
+    }
+  }
 
-  Future<void> _showImageSourceDialog() async {
-    if (_isLoading) return; // Don't show dialog if already processing
+  @override
+  void dispose() {
+    _medicineScannerBloc.close();
+    _scrollController.removeListener(_onScroll);
+    _scrollController.dispose();
+    super.dispose();
+  }
 
-    return showDialog<void>(
+  Future<void> _pickImage(ImageSource source) async {
+    final pickedFile = await picker.pickImage(source: source);
+    if (pickedFile != null) {
+      _medicineScannerBloc.add(ScanMedicineEvent(File(pickedFile.path)));
+    } else {
+      print('No image selected.');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('No image selected.')));
+      }
+    }
+  }
+
+  void _showPicker() {
+    showModalBottomSheet(
       context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text('Select Image Source'),
-          content: SingleChildScrollView(
-            child: ListBody(
-              children: <Widget>[
-                GestureDetector(
-                  child: const Text('Camera'),
-                  onTap: () {
-                    Navigator.of(context).pop();
-                    _getImage(ImageSource.camera);
-                  },
-                ),
-                const Padding(padding: EdgeInsets.all(8.0)),
-                GestureDetector(
-                  child: const Text('Gallery'),
-                  onTap: () {
-                    Navigator.of(context).pop();
-                    _getImage(ImageSource.gallery);
-                  },
-                ),
-              ],
-            ),
+      builder: (BuildContext bc) {
+        return SafeArea(
+          child: Wrap(
+            children: <Widget>[
+              ListTile(
+                leading: const Icon(Icons.photo_library),
+                title: const Text('Photo Library'),
+                onTap: () {
+                  _pickImage(ImageSource.gallery);
+                  Navigator.of(context).pop();
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.photo_camera),
+                title: const Text('Camera'),
+                onTap: () {
+                  _pickImage(ImageSource.camera);
+                  Navigator.of(context).pop();
+                },
+              ),
+            ],
           ),
         );
       },
     );
   }
 
-  Future<void> _getImage(ImageSource source) async {
-    // Reset state for new image processing
-    setState(() {
-      // _image = null; // Keep previous image visible until new one is picked
-      _responseText = null;
-      _isLoading = false; // Reset loading state
-    });
-
-    try {
-      final pickedFile = await picker.pickImage(source: source);
-
-      if (pickedFile != null) {
-        setState(() {
-          _image = File(pickedFile.path);
-        });
-        _processImageWithOllama(); // Start processing the new image
-      } else {
-        print('No image selected.');
-        // Optionally, provide feedback if no image was selected
-        // setState(() { _responseText = 'Image selection cancelled.'; });
-      }
-    } catch (e) {
-      print('Error picking image: $e');
-      setState(() {
-        _responseText = 'Error picking image: $e';
-        _isLoading = false;
-      });
-    }
-  }
-
-  Future<void> _processImageWithOllama() async {
-    if (_image == null) return;
-
-    setState(() {
-      _isLoading = true;
-      _responseText = null; // Clear previous response
-    });
-
-    try {
-      final imageBytes = await _image!.readAsBytes();
-      final base64Image = base64Encode(imageBytes);
-
-      // --- HTTP Client Setup with Proxy ---
-      final httpClient = HttpClient();
-      if (_proxyHost.isNotEmpty && _proxyPort > 0) {
-        print('Using proxy: $_proxyHost:$_proxyPort');
-        httpClient.findProxy = (uri) {
-          return "PROXY $_proxyHost:$_proxyPort";
-        };
-        // Note: For proxies requiring authentication, dart:io/HttpClient has limited direct support.
-        // You might need OS-level configuration or specific packages like `socks_proxy`.
-      } else {
-        print('No explicit proxy configured. Using system settings or direct connection.');
-        httpClient.findProxy = HttpClient.findProxyFromEnvironment;
-      }
-
-      // Optional: If your Ollama instance (or proxy) uses a self-signed SSL certificate:
-      // httpClient.badCertificateCallback = (X509Certificate cert, String host, int port) => true;
-
-      final ioClient = IOClient(httpClient);
-      // --- End of HTTP Client Setup ---
-
-      final ollamaClient = OllamaClient(
-        // baseUrl: _ollamaApiBaseUrl,
-        // client: ioClient, // Pass the custom client
-      );
-
-      final request = GenerateCompletionRequest(
-        model: 'gemma3:4b', // As specified
-        prompt:
-            'You are a helpful assistant. The user has provided an image. '
-            'If the image appears to be of a medicine (pill, packaging, etc.), '
-            'identify the medicine name, describe its common uses, and note any distinct visual characteristics. '
-            'If the image is not clearly a medicine, state that. '
-            'Respond in Markdown format.',
-        images: [base64Image],
-        // stream: false, // Default is false, ensures full response
-      );
-
-      print('Sending request to Ollama...');
-      final response = await ollamaClient.generateCompletion(request: request);
-      print('Received response from Ollama.');
-
-      setState(() {
-        _responseText = response.response;
-        _isLoading = false;
-      });
-    } catch (e) {
-      print('Error processing image with Ollama: $e');
-      setState(() {
-        _responseText = 'Error: ${e.toString()}';
-        _isLoading = false;
-      });
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Medicine Scanner')),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.start,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: <Widget>[
-              Center(
-                child: _image == null
-                    ? Container(
-                        height: 200,
-                        width: double.infinity,
-                        color: Colors.grey[200],
-                        child: const Center(child: Text('No image selected.')),
-                      )
-                    : Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 16.0),
-                        child: Image.file(
-                          _image!,
-                          height: 250,
-                          fit: BoxFit.contain,
-                        ),
-                      ),
-              ),
-              const SizedBox(height: 20),
-              ElevatedButton.icon(
-                icon: const Icon(Icons.image_search),
-                label: const Text("Pick Image to Scan"),
-                onPressed: _isLoading ? null : _showImageSourceDialog,
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                ),
-              ),
-              const SizedBox(height: 20),
-              if (_isLoading)
-                const Center(
-                  child: Column(
-                    children: [
-                      CircularProgressIndicator(),
-                      SizedBox(height: 10),
-                      Text('Scanning medicine...'),
-                    ],
-                  ),
-                )
-              else if (_responseText != null)
-                Container(
-                  padding: const EdgeInsets.all(12.0),
-                  decoration: BoxDecoration(
-                    color: Colors.grey[100],
-                    border: Border.all(color: Colors.grey.shade300),
-                    borderRadius: BorderRadius.circular(8.0),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Scan Result:',
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
-                      ),
-                      const Divider(),
-                      MarkdownBody(
-                        data: _responseText!,
-                        selectable: true,
-                        styleSheet: MarkdownStyleSheet.fromTheme(Theme.of(context)).copyWith(
-                          p: Theme.of(context).textTheme.bodyMedium?.copyWith(fontSize: 15),
-                        ),
-                      ),
-                    ],
-                  ),
-                )
-              else if (_image != null && !_isLoading && _responseText == null)
-                 Padding(
-                   padding: const EdgeInsets.only(top: 16.0),
-                   child: Center(child: Text(
-                     'Image selected. Ready for processing or previous scan yielded no text.',
-                     textAlign: TextAlign.center,
-                     style: TextStyle(color: Colors.grey[600]),
-                   )),
-                 ),
-            ],
-          ),
+    return BlocProvider.value(
+      value: _medicineScannerBloc,
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('Medicine Scanner'),
+          actions: [
+            BlocBuilder<MedicineScannerBloc, MedicineScannerState>(
+              builder: (context, state) {
+                if (state is! MedicineScannerInitial && state is! MedicineScannerLoading) {
+                  return IconButton(
+                    icon: const Icon(Icons.refresh),
+                    tooltip: 'Scan new image',
+                    onPressed: () {
+                      context.read<MedicineScannerBloc>().add(ClearScanEvent());
+                    },
+                  );
+                }
+                return const SizedBox.shrink();
+              },
+            ),
+          ],
         ),
+        body: BlocConsumer<MedicineScannerBloc, MedicineScannerState>(
+          listener: (context, state) {
+            if (state is MedicineScannerFailure) {
+              ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: ${state.error}'), backgroundColor: Colors.red));
+            } else if (state is MedicineScannerSuccess) {
+              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Analysis Complete!'), backgroundColor: Colors.green));
+            }
+          },
+          builder: (context, state) {
+            File? currentImage;
+            if (state is MedicineScannerImagePicked) currentImage = state.image;
+            if (state is MedicineScannerLoading) currentImage = state.image;
+            if (state is MedicineScannerSuccess) currentImage = state.image;
+            if (state is MedicineScannerFailure && state.image != null) currentImage = state.image!;
+
+            return SingleChildScrollView(
+              controller: _scrollController,
+              padding: const EdgeInsets.all(16.0).copyWith(bottom: 80),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: <Widget>[
+                  Center(
+                    child:
+                        currentImage != null
+                            ? ClipRRect(borderRadius: BorderRadius.circular(12.0), child: Image.file(currentImage, fit: BoxFit.contain, height: 300))
+                            : Container(
+                              height: 200,
+                              decoration: BoxDecoration(border: Border.all(color: Colors.grey), borderRadius: BorderRadius.circular(12.0)),
+                              child: const Center(child: Text('No image selected.', style: TextStyle(fontSize: 16))),
+                            ),
+                  ),
+                  const SizedBox(height: 20),
+                  if (state is MedicineScannerLoading) ...[
+                    const Center(child: CircularProgressIndicator()),
+                    const SizedBox(height: 10),
+                    const Text('Analyzing medicine...', textAlign: TextAlign.center, style: TextStyle(fontSize: 16)),
+                  ] else if (state is MedicineScannerSuccess) ...[
+                    const Text('Medicine Information:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+                    const SizedBox(height: 8),
+                    MarkdownBody(
+                      data: state.medicineInfo,
+                      selectable: true,
+                      styleSheet: MarkdownStyleSheet.fromTheme(Theme.of(context)).copyWith(p: Theme.of(context).textTheme.bodyMedium?.copyWith(fontSize: 16)),
+                    ),
+                  ] else if (state is MedicineScannerFailure) ...[
+                    Text('Failed to analyze. ${state.error}', textAlign: TextAlign.center, style: const TextStyle(color: Colors.red, fontSize: 16)),
+                  ] else if (state is MedicineScannerInitial || state is MedicineScannerImagePicked) ...[
+                    const Text('Pick an image to start analysis.', textAlign: TextAlign.center, style: TextStyle(fontSize: 16)),
+                  ],
+                ],
+              ),
+            );
+          },
+        ),
+        floatingActionButton: BlocBuilder<MedicineScannerBloc, MedicineScannerState>(
+          builder: (context, state) {
+            if (state is MedicineScannerSuccess || state is MedicineScannerFailure || state is MedicineScannerInitial || state is MedicineScannerImagePicked) {
+              if (_isScrolled) {
+                return FloatingActionButton(onPressed: _showPicker, tooltip: 'Scan Medicine', child: const Icon(Icons.camera_alt));
+              } else {
+                String labelText = (state is MedicineScannerSuccess || state is MedicineScannerFailure || state is MedicineScannerImagePicked) ? 'Scan Another Medicine' : 'Scan Medicine';
+
+                return FloatingActionButton.extended(onPressed: _showPicker, label: Text(labelText), icon: const Icon(Icons.camera_alt));
+              }
+            }
+            return const SizedBox.shrink();
+          },
+        ),
+        floatingActionButtonLocation: _isScrolled ? FloatingActionButtonLocation.endFloat : FloatingActionButtonLocation.centerFloat,
       ),
     );
   }

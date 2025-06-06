@@ -1,17 +1,17 @@
 class Medicine {
   final String id;
-  final String imagePath;
   final String name;
   final String strength;
+  final String imagePath;
   final int quantity;
-  final DateTime expiry;
+  final DateTime expiryDate;
 
   Medicine({
     required this.id,
     required this.name,
-    required this.strength,
     required this.imagePath,
+    required this.strength,
     required this.quantity,
-    required this.expiry,
+    required this.expiryDate,
   });
 }

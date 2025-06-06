@@ -1,71 +1,72 @@
 import 'package:flutter/material.dart';
 
 import '../models/medicine.dart';
+import '../utils/routes.dart';
 
-// You might need to create an EmptyState widget or use a package
-// import 'package:medicine_tracker_app/widgets/empty_state.dart';
+// Placeholder Medicine class (replace with your actual model)
 
-class InventoryListView extends StatelessWidget {
-  final List<Medicine> medicines;
-
-  const InventoryListView({Key? key, required this.medicines}) : super(key: key);
+class EmptyState extends StatelessWidget {
+  const EmptyState({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    if (medicines.isEmpty) {
-      // Assuming you have an EmptyState widget that takes an image path
-      // You need to ensure 'assets/images/empty_box.png' exists
-      // and is listed in pubspec.yaml under assets.
-      return const Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            // Replace with your EmptyState widget if available
-            // Image.asset('assets/images/empty_box.png'),
-            Icon(Icons.inbox, size: 80.0, color: Colors.grey),
-            SizedBox(height: 16.0),
-            Text(
-              'Your inventory is empty!',
-              style: TextStyle(fontSize: 18.0, color: Colors.grey),
-            ),
-          ],
-        ),
-      );
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          // User needs to add this image asset
+          Image.asset('assets/images/empty_box.png', width: 150, height: 150),
+          const SizedBox(height: 20),
+          Text('Your inventory is empty.'),
+          const SizedBox(height: 10),
+          Text('Add your first medicine to get started.'),
+        ],
+      ),
+    );
+  }
+}
+
+class InventoryListView extends StatelessWidget {
+  final List<Medicine> inventory;
+
+  const InventoryListView({Key? key, required this.inventory}) : super(key: key);
+
+  Color _getExpiryChipColor(DateTime expiryDate) {
+    final now = DateTime.now();
+    final difference = expiryDate.difference(now).inDays;
+
+    if (difference < 0) {
+      return Colors.red[700]!;
+    } else if (difference <= 30) {
+      return Colors.red;
+    } else if (difference <= 90) {
+      return Colors.orange;
+    } else {
+      return Colors.green;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (inventory.isEmpty) {
+      return const EmptyState();
     } else {
       return ListView.builder(
-        itemCount: medicines.length,
+        itemCount: inventory.length,
         itemBuilder: (context, index) {
-          final medicine = medicines[index];
-          // Determine chip color based on expiry date
-          final now = DateTime.now();
-          final difference = medicine.expiry.difference(now).inDays;
-          Color chipColor = Colors.green;
-          if (difference < 30 && difference >= 0) {
-            chipColor = Colors.amber;
-          } else if (difference < 0) {
-            chipColor = Colors.red;
-          }
-
+          final medicine = inventory[index];
           return ListTile(
-            leading: Hero(
-              tag: 'medicineImage_${medicine.id}',
-              child: CircleAvatar(
-                child: Image.asset(medicine.imagePath, fit: BoxFit.contain,),
-              ),
-            ),
+            leading: CircleAvatar(child: Text(medicine.name.isNotEmpty ? medicine.name[0].toUpperCase() : '')),
             title: Text(medicine.name),
             subtitle: Text('${medicine.strength}, Quantity: ${medicine.quantity}'),
             trailing: Chip(
-              label: Text(
-                'Exp: ${medicine.expiry.toLocal().toString().split(' ')[0]}',
-                style: TextStyle(color: Colors.white),
-              ),
-              backgroundColor: chipColor,
+              label: Text('Exp: ${medicine.expiryDate.toLocal().toString().split(' ')[0]}'),
+              backgroundColor: _getExpiryChipColor(medicine.expiryDate),
+              labelStyle: TextStyle(color: Colors.white),
             ),
             onTap: () {
-              // Navigate to detail screen
-              // You will need to define this route in your application's routing
-              Navigator.pushNamed(context, '/inventory/detail', arguments: medicine);
+              // Navigate to detail screen, passing medicine id or object
+              Navigator.pushNamed(context, AppRoutes.inventoryDetail, arguments: medicine.id);
             },
           );
         },
