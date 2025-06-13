@@ -2,11 +2,11 @@ class Medicine {
   final String id;
   final String name;
   final String strength;
-  final String imagePath;
+  final String? imagePath;
   final int quantity;
   final DateTime expiryDate;
-  final String? dosageInformation;
-  final String? usageInformation;
+  final String? dosage;
+  final String? usage;
   final String? sideEffects;
 
   Medicine({
@@ -16,11 +16,12 @@ class Medicine {
     required this.strength,
     required this.quantity,
     required this.expiryDate,
-    this.dosageInformation,
-    this.usageInformation,
+    this.dosage,
+    this.usage,
     this.sideEffects,
   });
 
+  // Convert Medicine object to a Map for database insertion
   Map<String, dynamic> toMap() {
     return {
       'id': id,
@@ -28,24 +29,10 @@ class Medicine {
       'strength': strength,
       'imagePath': imagePath,
       'quantity': quantity,
-      'expiryDate': expiryDate.toIso8601String(),
-      'dosageInformation': dosageInformation,
-      'usageInformation': usageInformation,
+      'expiryDate': expiryDate.millisecondsSinceEpoch,
+      'dosage': dosage,
+      'usage': usage,
       'sideEffects': sideEffects,
     };
-  }
-
-  factory Medicine.fromMap(Map<String, dynamic> map) {
-    return Medicine(
-      id: map['id'] as String,
-      name: map['name'] as String,
-      strength: map['strength'] as String,
-      imagePath: map['imagePath'] as String,
-      quantity: map['quantity'] as int,
-      expiryDate: DateTime.parse(map['expiryDate'] as String),
-      dosageInformation: map['dosageInformation'] as String?,
-      usageInformation: map['usageInformation'] as String?,
-      sideEffects: map['sideEffects'] as String?,
-    );
   }
 }

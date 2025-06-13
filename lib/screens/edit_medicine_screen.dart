@@ -2,31 +2,49 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:intl/intl.dart';
 import '../blocs/medicine_inventory/medicine_inventory_bloc.dart';
 import '../blocs/medicine_inventory/medicine_inventory_event.dart';
 import '../blocs/medicine_inventory/medicine_inventory_state.dart';
 import '../models/medicine.dart';
 
-class AddMedicineScreen extends StatefulWidget {
-  const AddMedicineScreen({Key? key}) : super(key: key);
+class EditMedicineScreen extends StatefulWidget {
+  final Medicine medicine;
+  const EditMedicineScreen({Key? key, required this.medicine}) : super(key: key);
 
   @override
-  _AddMedicineScreenState createState() => _AddMedicineScreenState();
+  _EditMedicineScreenState createState() => _EditMedicineScreenState();
 }
 
-class _AddMedicineScreenState extends State<AddMedicineScreen> {
+class _EditMedicineScreenState extends State<EditMedicineScreen> {
   final _formKey = GlobalKey<FormState>();
   final picker = ImagePicker();
   File? _image;
 
-  final TextEditingController _nameController = TextEditingController();
-  final TextEditingController _strengthController = TextEditingController();
-  final TextEditingController _quantityController = TextEditingController();
-  final TextEditingController _expiryController = TextEditingController();
-  final TextEditingController _dosageController = TextEditingController();
-  final TextEditingController _usageController = TextEditingController();
-  final TextEditingController _sideEffectsController = TextEditingController();
+  late TextEditingController _nameController;
+  late TextEditingController _strengthController;
+  late TextEditingController _quantityController;
+  late TextEditingController _expiryController;
+  late TextEditingController _dosageController;
+  late TextEditingController _usageController;
+  late TextEditingController _sideEffectsController;
   DateTime? _expiryDate;
+
+  @override
+  void initState() {
+    super.initState();
+    _nameController = TextEditingController(text: widget.medicine.name);
+    _strengthController = TextEditingController(text: widget.medicine.strength);
+    _quantityController = TextEditingController(text: widget.medicine.quantity.toString());
+    _expiryDate = widget.medicine.expiryDate;
+    _expiryController = TextEditingController(text: DateFormat.yMMMd().format(_expiryDate!));
+    _dosageController = TextEditingController(text: widget.medicine.dosage);
+    _usageController = TextEditingController(text: widget.medicine.usage);
+    _sideEffectsController = TextEditingController(text: widget.medicine.sideEffects);
+    if (widget.medicine.imagePath != null) {
+      _image = File(widget.medicine.imagePath!);
+    }
+  }
 
   @override
   void dispose() {
@@ -59,7 +77,7 @@ class _AddMedicineScreenState extends State<AddMedicineScreen> {
     if (picked != null && picked != _expiryDate) {
       setState(() {
         _expiryDate = picked;
-        _expiryController.text = "${picked.toLocal()}".split(' ')[0];
+        _expiryController.text = DateFormat.yMMMd().format(picked);
       });
     }
   }
@@ -94,10 +112,10 @@ class _AddMedicineScreenState extends State<AddMedicineScreen> {
     );
   }
 
-  void _saveMedicine() {
+  void _updateMedicine() {
     if (_formKey.currentState!.validate() && _expiryDate != null) {
-      final newMedicine = Medicine(
-        id: DateTime.now().millisecondsSinceEpoch.toString(),
+      final updatedMedicine = Medicine(
+        id: widget.medicine.id,
         name: _nameController.text,
         strength: _strengthController.text,
         quantity: int.parse(_quantityController.text),
@@ -108,7 +126,7 @@ class _AddMedicineScreenState extends State<AddMedicineScreen> {
         imagePath: _image?.path,
       );
 
-      context.read<MedicineInventoryBloc>().add(AddMedicine(newMedicine));
+      context.read<MedicineInventoryBloc>().add(UpdateMedicine(updatedMedicine));
     }
   }
 
@@ -117,7 +135,6 @@ class _AddMedicineScreenState extends State<AddMedicineScreen> {
     return BlocListener<MedicineInventoryBloc, MedicineInventoryState>(
       listener: (context, state) {
         if (state is MedicineInventoryActionSuccess) {
-          context.read<MedicineInventoryBloc>().add(LoadMedicines());
           Navigator.pop(context);
         } else if (state is MedicineInventoryError) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -127,7 +144,7 @@ class _AddMedicineScreenState extends State<AddMedicineScreen> {
       },
       child: Scaffold(
         appBar: AppBar(
-          title: const Text('Add New Medicine'),
+          title: const Text('Edit Medicine'),
         ),
         body: Padding(
           padding: const EdgeInsets.all(16.0),
@@ -157,7 +174,7 @@ class _AddMedicineScreenState extends State<AddMedicineScreen> {
                               Icon(Icons.camera_alt,
                                   size: 50, color: Colors.grey[600]),
                               const SizedBox(height: 10),
-                              Text('Tap to add medicine image',
+                              Text('Tap to change medicine image',
                                   style: TextStyle(
                                       fontSize: 16, color: Colors.grey[600])),
                             ],
@@ -238,8 +255,8 @@ class _AddMedicineScreenState extends State<AddMedicineScreen> {
                 ),
                 const SizedBox(height: 24.0),
                 ElevatedButton(
-                  onPressed: _saveMedicine,
-                  child: const Text('Save Medicine'),
+                  onPressed: _updateMedicine,
+                  child: const Text('Save Changes'),
                 ),
               ],
             ),
@@ -248,4 +265,4 @@ class _AddMedicineScreenState extends State<AddMedicineScreen> {
       ),
     );
   }
-}
+} 
