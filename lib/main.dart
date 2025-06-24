@@ -32,7 +32,7 @@ Future<void> main() async {
     MultiBlocProvider(
       providers: [
         BlocProvider(create: (context) => AuthBloc()),
-        BlocProvider(create: (context) => MedicineScannerBloc(ollama: OllamaClient())),
+        BlocProvider(create: (context) => MedicineScannerBloc(ollama: OllamaClient(), supabase: Supabase.instance.client)),
         BlocProvider(create: (context) => MedicineInventoryBloc()),
         BlocProvider(create: (context) => MedicineReminderBloc(databaseService: DatabaseService(), notificationService: NotificationService())..add(LoadReminders())),
       ],

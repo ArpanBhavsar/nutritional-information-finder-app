@@ -1,6 +1,5 @@
-import 'dart:io';
-
 import 'package:equatable/equatable.dart';
+import 'package:image_picker/image_picker.dart';
 
 abstract class MedicineScannerState extends Equatable {
   const MedicineScannerState();
@@ -12,7 +11,7 @@ abstract class MedicineScannerState extends Equatable {
 class MedicineScannerInitial extends MedicineScannerState {}
 
 class MedicineScannerImagePicked extends MedicineScannerState {
-  final File image;
+  final XFile image;
 
   const MedicineScannerImagePicked(this.image);
 
@@ -21,7 +20,7 @@ class MedicineScannerImagePicked extends MedicineScannerState {
 }
 
 class MedicineScannerLoading extends MedicineScannerState {
-  final File image; // Keep the image to display while loading
+  final XFile image; // Keep the image to display while loading
   const MedicineScannerLoading(this.image);
 
   @override
@@ -29,7 +28,7 @@ class MedicineScannerLoading extends MedicineScannerState {
 }
 
 class MedicineScannerSuccess extends MedicineScannerState {
-  final File image; // Keep the image to display with results
+  final XFile image; // Keep the image to display with results
   final String medicineInfo; // This will hold the response from Ollama
 
   const MedicineScannerSuccess(this.image, this.medicineInfo);
@@ -39,7 +38,7 @@ class MedicineScannerSuccess extends MedicineScannerState {
 }
 
 class MedicineScannerFailure extends MedicineScannerState {
-  final File? image; // Optionally keep the image
+  final XFile? image; // Optionally keep the image
   final String error;
 
   const MedicineScannerFailure(this.error, {this.image});
